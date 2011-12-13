@@ -5,7 +5,7 @@ use LWP::UserAgent;
 
 my $count=0;
 my $access_token =
-'AAACEdEose0cBAPvadSxemoaZAe0o4WjtxasWZChKm0B2ZBvCiL5ZAqKriSwSozxhXAUP7pMv51c71bA9QzlERHDyyZAVLd0yxewDZBGZA2PQwZDZD';
+'token';
 my $hStreamingScore, $hHistoryScore, $hCommentData;
 my $counter;
 my $cookie_jar = HTTP::Cookies->new(autosave => 1);
