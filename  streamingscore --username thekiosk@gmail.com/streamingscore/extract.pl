@@ -15,7 +15,7 @@ my $browserGet = LWP::UserAgent->new(
 my $browserPost = LWP::UserAgent->new(
  agent => 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)'
 );
-$browserGet->proxy('http', "PROXY URL");
+$browserGet->proxy('http', "PROXY URL ");
 #open(IN, "testtest.html")   or die "Can't open input.txt: $!";
 
 while (true) {
