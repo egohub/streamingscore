@@ -232,7 +232,7 @@ while (true) {
 			   $count++;
 		}
 	else {
-		print "Can't get response\n";
+		print "##################Can't get response##################\n";
 	}
 }
 #close IN;
