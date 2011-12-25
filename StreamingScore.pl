@@ -15,7 +15,7 @@ my $browserGet = LWP::UserAgent->new(
 my $browserPost = LWP::UserAgent->new(
  agent => 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)'
 );
-#$browserGet->proxy('http', "PROXY URL ");
+#$browserGet->proxy('http', "BBB");
 #open(IN, "testtest.html")   or die "Can't open input.txt: $!";
 
 
@@ -251,8 +251,7 @@ sub postFB {
 						print "Create New data Block for $stringKey[1] vs $stringKey[3] on ".$commentID[0]." with score $stringKey[2]\n";
 						push ( @{$hCommentData{"$stringKey[1]"."|"."$stringKey[3]"}}, $commentID[0]."\t".$stringKey[2]);
 					}
-				}
-				print "$dataBlock\n";
+				}				
 			}	
 		}
 
