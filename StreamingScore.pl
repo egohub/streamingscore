@@ -51,7 +51,21 @@ while (true){
 #
 #########################################################################################################
 
+sub get_timestamp {
+   ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+   if ($mon < 10) { $mon = "0$mon"; }
+   if ($hour < 10) { $hour = "0$hour"; }
+   if ($min < 10) { $min = "0$min"; }
+   if ($sec < 10) { $sec = "0$sec"; }
+   $year=$year+1900;
+   use Time::HiRes qw(gettimeofday);
+   @_us     = gettimeofday;
+   $ms     = substr(sprintf("%.3f", "0." . $_us[1]), 2);
+   return "$year$mon$mday";
+}
+
 sub extractData {
+	my $timeStamp = get_timestamp();
 	#$filename = "debug.log"; open FH, ">".$filename or die "could notopen $filename: $!\n";
 	%hStreamingScore = ();
 	my $get = $browserGet->get('http://livescore.com');
@@ -126,7 +140,7 @@ sub extractData {
 										   #}
 						}
 								   #print FH "------------------------------------------------------------------------------------------------\n";
-						push ( @{$hStreamingScore{"$teamHome"."|"."$teamAway"}}, $timeInGame."\|".$homeScore."\|".$awayScore."\|".$teamHome."\|".$teamAway."\|".$linkScore);
+						push ( @{$hStreamingScore{"$timeStamp"."|"."$teamHome"."|"."$teamAway"}}, $timeInGame."\|".$homeScore."\|".$awayScore."\|".$teamHome."\|".$teamAway."\|".$linkScore);
 					}
 				}
 			}
@@ -204,7 +218,7 @@ sub postFB {
 		#2. update to FB page here!!!
 		foreach my $newLine (@realTimeScore){
 			my @stringKey = split /\t/, $newLine;
-			my @dataOnHash = split /\t/, @{$hCommentData{"$stringKey[1]"."|"."$stringKey[3]"}}[0];
+			my @dataOnHash = split /\t/, @{$hCommentData{"$timeStamp"."|"."$stringKey[1]"."|"."$stringKey[3]"}}[0];
 			my @scoreOnHash = split /\s-\s/, $dataOnHash[1];
 			my @scoreOnNewUpdate = split /\s-\s/, $stringKey[2];
 			$scoreOnHash[0] =~ s/\[//;
@@ -231,8 +245,8 @@ sub postFB {
 							method       => 'post'
 						]);
 
-					   delete $hCommentData{"$stringKey[1]"."|"."$stringKey[3]"};
-					   push ( @{$hCommentData{"$stringKey[1]"."|"."$stringKey[3]"}},$dataOnHash[0]."\t".$stringKey[2]);
+					   delete $hCommentData{"$timeStamp"."|"."$stringKey[1]"."|"."$stringKey[3]"};
+					   push ( @{$hCommentData{"$timeStamp"."|"."$stringKey[1]"."|"."$stringKey[3]"}},$dataOnHash[0]."\t".$stringKey[2]);
 			   }else{
 					$get = $browserPost->post('https://graph.facebook.com/278883242154232/feed',
 					   [
@@ -249,7 +263,7 @@ sub postFB {
 					@commentID = ($dataBlock =~ /"id":\s"(.*?)"/);
 					if ($commentID[0] ne ""){
 						print "Create New data Block for $stringKey[1] vs $stringKey[3] on ".$commentID[0]." with score $stringKey[2]\n";
-						push ( @{$hCommentData{"$stringKey[1]"."|"."$stringKey[3]"}}, $commentID[0]."\t".$stringKey[2]);
+						push ( @{$hCommentData{"$timeStamp"."|"."$stringKey[1]"."|"."$stringKey[3]"}}, $commentID[0]."\t".$stringKey[2]);
 					}
 				}				
 			}	
