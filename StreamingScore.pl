@@ -1,11 +1,13 @@
 ﻿use HTTP::Request::Common;
 use HTTP::Cookies;
 use LWP::UserAgent;
+use Time::Local;
 
 
 my $count=0;
 my $access_token = 'AAA';
 my $hStreamingScore, $hHistoryScore, $hCommentData, $hZeroData, $hInitData;
+my $timeStamp;
 my @realTimeScore=();
 my $counter;
 my $cookie_jar = HTTP::Cookies->new(autosave => 1);
@@ -20,7 +22,7 @@ my $browserPost = LWP::UserAgent->new(
 
 
 #1. load persis message from file.
-open(INFILE,  "persis.log") or die "could notopen $filename: $!\n";
+open(INFILE,  "persis.log") ;
 while (<INFILE>) {
 	my @tempString = split /\t/, $_;
 	$tempString[1] =~ s/\n//g;
@@ -30,6 +32,7 @@ close INFILE;
 
 #2. while true for get data all the time
 while (true){
+	$timeStamp = get_timestamp();
 	$count++;
 	#3. extract data from livescore.com
 	extractData();
@@ -64,8 +67,7 @@ sub get_timestamp {
    return "$year$mon$mday";
 }
 
-sub extractData {
-	my $timeStamp = get_timestamp();
+sub extractData {	
 	#$filename = "debug.log"; open FH, ">".$filename or die "could notopen $filename: $!\n";
 	%hStreamingScore = ();
 	my $get = $browserGet->get('http://livescore.com');
@@ -177,10 +179,10 @@ sub comPare {
 		my $sumNew = $newScore[1] + $newScore[2];
 		$update =~ s/\s//g;
 		$time =~ s/\s//g;
-		#print $pervious ." vs ".$update."\n";
+		#print $pervious ." vs ".$update."\n"; Postp.
 		#print $scoreOnInit[0].$scoreOnInit[1] ." vs ". $newScore[1].$newScore[2]."\n";;
 		if ($stringOld eq ""){$sumOld = -1;}
-		if (("$update" ne "") && ($sumNew > $sumOld) && ("$stringNew" ne "??") && ($time ne "FT") && ($time ne "HT")){
+		if (("$update" ne "") && ($sumNew > $sumOld) && ("$stringNew" ne "??") && ($time ne "Postp.") && ($time ne "AET") && ($time ne "Susp.") && ($time ne "FT") && ($time ne "HT")){
 			$isUpdate = "TRUE";
 			#print "$newScore[1] + $newScore[2]=$sumNew...$scoreOnInit[0] + $scoreOnInit[1]=$sumOld\n";
 			#record the change score in game to $realTimeScore.
