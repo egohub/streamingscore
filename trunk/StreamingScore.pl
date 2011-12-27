@@ -1,13 +1,11 @@
 ﻿use HTTP::Request::Common;
 use HTTP::Cookies;
 use LWP::UserAgent;
-use Time::Local;
 
 
 my $count=0;
 my $access_token = 'AAA';
 my $hStreamingScore, $hHistoryScore, $hCommentData, $hZeroData, $hInitData;
-my $timeStamp;
 my @realTimeScore=();
 my $counter;
 my $cookie_jar = HTTP::Cookies->new(autosave => 1);
@@ -31,8 +29,7 @@ while (<INFILE>) {
 close INFILE;
 
 #2. while true for get data all the time
-while (true){
-	$timeStamp = get_timestamp();
+while (true){	
 	$count++;
 	#3. extract data from livescore.com
 	extractData();
@@ -54,18 +51,6 @@ while (true){
 #
 #########################################################################################################
 
-sub get_timestamp {
-   ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
-   if ($mon < 10) { $mon = "0$mon"; }
-   if ($hour < 10) { $hour = "0$hour"; }
-   if ($min < 10) { $min = "0$min"; }
-   if ($sec < 10) { $sec = "0$sec"; }
-   $year=$year+1900;
-   use Time::HiRes qw(gettimeofday);
-   @_us     = gettimeofday;
-   $ms     = substr(sprintf("%.3f", "0." . $_us[1]), 2);
-   return "$year$mon$mday";
-}
 
 sub extractData {	
 	#$filename = "debug.log"; open FH, ">".$filename or die "could notopen $filename: $!\n";
@@ -83,8 +68,7 @@ sub extractData {
 			if (@heading = ($League[$i] =~ /<tr bgcolor="#333333">(.*?)<tr><td colspan="4" height="1">/)){
 				@headingDetail = ($heading[0] =~ /<b>(.*?)<\/b>\s\-\s(.*?)<\/td>.*?\&nbsp\;(.*?)<\/td>.*?"3">(.*?)\&nbsp\;/);
 				#print FH $headingDetail[0]." - ".$headingDetail[1]."\n";
-				#print FH "Current time is ".$headingDetail[2]." on ".$headingDetail[3]."\n";
-				#print FH "================================================================================================\n";
+				#print "Current time is ".$headingDetail[2]." on ".$headingDetail[3]."\n";
 
 				my $teamHome;
 				my $teamAway;
@@ -139,10 +123,9 @@ sub extractData {
 										#print FH "$player[0]\t$player[1]\t$player[3]\t has $reason[0]\n";
 									}
 							}
-										   #}
+							#}
 						}
-								   #print FH "------------------------------------------------------------------------------------------------\n";
-						push ( @{$hStreamingScore{"$timeStamp"."|"."$teamHome"."|"."$teamAway"}}, $timeInGame."\|".$homeScore."\|".$awayScore."\|".$teamHome."\|".$teamAway."\|".$linkScore);
+						push ( @{$hStreamingScore{"$headingDetail[3]"."|"."$teamHome"."|"."$teamAway"}}, $timeInGame."\|".$homeScore."\|".$awayScore."\|".$teamHome."\|".$teamAway."\|".$linkScore."\|".$headingDetail[3]);
 					}
 				}
 			}
@@ -179,23 +162,10 @@ sub comPare {
 		my $sumNew = $newScore[1] + $newScore[2];
 		$update =~ s/\s//g;
 		$time =~ s/\s//g;
-		#print $pervious ." vs ".$update."\n"; Postp.
-		#print $scoreOnInit[0].$scoreOnInit[1] ." vs ". $newScore[1].$newScore[2]."\n";;
 		if ($stringOld eq ""){$sumOld = -1;}
 		if (("$update" ne "") && ($sumNew > $sumOld) && ("$stringNew" ne "??") && ($time ne "Postp.") && ($time ne "AET") && ($time ne "Susp.") && ($time ne "FT") && ($time ne "HT")){
 			$isUpdate = "TRUE";
-			#print "$newScore[1] + $newScore[2]=$sumNew...$scoreOnInit[0] + $scoreOnInit[1]=$sumOld\n";
-			#record the change score in game to $realTimeScore.
-			#print $oldScore[1].$oldScore[2]."\n";
-			#print @{$hStreamingScore{"$key1"}}[0]."\n";
-			#print $pervious ." vs ".$update."\n";
-			push (@realTimeScore, $newScore[0]."\t".$newScore[3]."\t\[".$newScore[1]." - ".$newScore[2]."\]\t".$newScore[4]."\t".$newScore[5]);
-		# } elsif (("$update" eq "00") && ("$stringNew" ne "??") && ($time ne "FT") && ($time ne "HT")){
-			# if ( @{$hZeroData{"$newScore[3]"."|"."$newScore[4]"}}[0] ne "1"){
-				# $isUpdate = "TRUE";
-				# push (@{$hZeroData{"$newScore[3]"."|"."$newScore[4]"}}, "1");
-				# push (@realTimeScore, $newScore[0]."\t".$newScore[3]."\t\[".$newScore[1]." - ".$newScore[2]."\]\t".$newScore[4]."\t".$newScore[5]);
-			# }								  
+			push (@realTimeScore, $newScore[0]."\t".$newScore[3]."\t\[".$newScore[1]." - ".$newScore[2]."\]\t".$newScore[4]."\t".$newScore[5]."\t".$newScore[6]);							  
 		}
 	}	
 	print "$count\tisUpdate??\t$isUpdate\n";
@@ -220,7 +190,7 @@ sub postFB {
 		#2. update to FB page here!!!
 		foreach my $newLine (@realTimeScore){
 			my @stringKey = split /\t/, $newLine;
-			my @dataOnHash = split /\t/, @{$hCommentData{"$timeStamp"."|"."$stringKey[1]"."|"."$stringKey[3]"}}[0];
+			my @dataOnHash = split /\t/, @{$hCommentData{"$stringKey[5]"."|"."$stringKey[1]"."|"."$stringKey[3]"}}[0];
 			my @scoreOnHash = split /\s-\s/, $dataOnHash[1];
 			my @scoreOnNewUpdate = split /\s-\s/, $stringKey[2];
 			$scoreOnHash[0] =~ s/\[//;
@@ -247,8 +217,8 @@ sub postFB {
 							method       => 'post'
 						]);
 
-					   delete $hCommentData{"$timeStamp"."|"."$stringKey[1]"."|"."$stringKey[3]"};
-					   push ( @{$hCommentData{"$timeStamp"."|"."$stringKey[1]"."|"."$stringKey[3]"}},$dataOnHash[0]."\t".$stringKey[2]);
+					   delete $hCommentData{"$stringKey[5]"."|"."$stringKey[1]"."|"."$stringKey[3]"};
+					   push ( @{$hCommentData{"$stringKey[5]"."|"."$stringKey[1]"."|"."$stringKey[3]"}},$dataOnHash[0]."\t".$stringKey[2]);
 			   }else{
 					$get = $browserPost->post('https://graph.facebook.com/278883242154232/feed',
 					   [
@@ -265,7 +235,7 @@ sub postFB {
 					@commentID = ($dataBlock =~ /"id":\s"(.*?)"/);
 					if ($commentID[0] ne ""){
 						print "Create New data Block for $stringKey[1] vs $stringKey[3] on ".$commentID[0]." with score $stringKey[2]\n";
-						push ( @{$hCommentData{"$timeStamp"."|"."$stringKey[1]"."|"."$stringKey[3]"}}, $commentID[0]."\t".$stringKey[2]);
+						push ( @{$hCommentData{"$stringKey[5]"."|"."$stringKey[1]"."|"."$stringKey[3]"}}, $commentID[0]."\t".$stringKey[2]);
 					}
 				}				
 			}	
