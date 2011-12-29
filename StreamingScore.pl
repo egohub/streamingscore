@@ -1,11 +1,13 @@
 ﻿use HTTP::Request::Common;
 use HTTP::Cookies;
 use LWP::UserAgent;
+use Time::Local;
 
 
 my $count=0;
 my $access_token = 'AAA';
 my $hStreamingScore, $hHistoryScore, $hCommentData, $hZeroData, $hInitData;
+my $timeStamp;
 my @realTimeScore=();
 my $counter;
 my $cookie_jar = HTTP::Cookies->new(autosave => 1);
@@ -18,6 +20,8 @@ my $browserPost = LWP::UserAgent->new(
 #$browserGet->proxy('http', "BBB");
 #open(IN, "testtest.html")   or die "Can't open input.txt: $!";
 
+($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+$timeStamp=$year+1900;
 
 #1. load persis message from file.
 open(INFILE,  "persis.log") ;
@@ -51,6 +55,18 @@ while (true){
 #
 #########################################################################################################
 
+sub get_timestamp {
+   ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+   if ($mon < 10) { $mon = "0$mon"; }
+   if ($hour < 10) { $hour = "0$hour"; }
+   if ($min < 10) { $min = "0$min"; }
+   if ($sec < 10) { $sec = "0$sec"; }
+   $year=$year+1900;
+   use Time::HiRes qw(gettimeofday);
+   @_us     = gettimeofday;
+   $ms     = substr(sprintf("%.3f", "0." . $_us[1]), 2);
+   return "$year$mon$mday";
+}
 
 sub extractData {	
 	#$filename = "debug.log"; open FH, ">".$filename or die "could notopen $filename: $!\n";
@@ -69,6 +85,7 @@ sub extractData {
 				@headingDetail = ($heading[0] =~ /<b>(.*?)<\/b>\s\-\s(.*?)<\/td>.*?\&nbsp\;(.*?)<\/td>.*?"3">(.*?)\&nbsp\;/);
 				#print FH $headingDetail[0]." - ".$headingDetail[1]."\n";
 				#print "Current time is ".$headingDetail[2]." on ".$headingDetail[3]."\n";
+				#print FH "================================================================================================\n";
 
 				my $teamHome;
 				my $teamAway;
@@ -123,8 +140,9 @@ sub extractData {
 										#print FH "$player[0]\t$player[1]\t$player[3]\t has $reason[0]\n";
 									}
 							}
-							#}
+										   #}
 						}
+								   #print FH "------------------------------------------------------------------------------------------------\n";
 						push ( @{$hStreamingScore{"$headingDetail[3]"."|"."$teamHome"."|"."$teamAway"}}, $timeInGame."\|".$homeScore."\|".$awayScore."\|".$teamHome."\|".$teamAway."\|".$linkScore."\|".$headingDetail[3]);
 					}
 				}
@@ -162,10 +180,23 @@ sub comPare {
 		my $sumNew = $newScore[1] + $newScore[2];
 		$update =~ s/\s//g;
 		$time =~ s/\s//g;
+		#print $pervious ." vs ".$update."\n"; Postp.
+		#print $scoreOnInit[0].$scoreOnInit[1] ." vs ". $newScore[1].$newScore[2]."\n";;
 		if ($stringOld eq ""){$sumOld = -1;}
-		if (("$update" ne "") && ($sumNew > $sumOld) && ("$stringNew" ne "??") && ($time ne "Postp.") && ($time ne "AET") && ($time ne "Susp.") && ($time ne "FT") && ($time ne "HT")){
+		if (("$update" ne "") && ($sumNew > $sumOld) && ("$stringNew" ne "??") && ($time ne "Postp.") && ($time ne "AET") && ($time ne "Pen.") && ($time ne "Susp.") && ($time ne "FT") && ($time ne "HT")){
 			$isUpdate = "TRUE";
-			push (@realTimeScore, $newScore[0]."\t".$newScore[3]."\t\[".$newScore[1]." - ".$newScore[2]."\]\t".$newScore[4]."\t".$newScore[5]."\t".$newScore[6]);							  
+			#print "$newScore[1] + $newScore[2]=$sumNew...$scoreOnInit[0] + $scoreOnInit[1]=$sumOld\n";
+			#record the change score in game to $realTimeScore.
+			#print $oldScore[1].$oldScore[2]."\n";
+			#print @{$hStreamingScore{"$key1"}}[0]."\n";
+			#print $pervious ." vs ".$update."\n";
+			push (@realTimeScore, $newScore[0]."\t".$newScore[3]."\t\[".$newScore[1]." - ".$newScore[2]."\]\t".$newScore[4]."\t".$newScore[5]."\t".$newScore[6]);
+		# } elsif (("$update" eq "00") && ("$stringNew" ne "??") && ($time ne "FT") && ($time ne "HT")){
+			# if ( @{$hZeroData{"$newScore[3]"."|"."$newScore[4]"}}[0] ne "1"){
+				# $isUpdate = "TRUE";
+				# push (@{$hZeroData{"$newScore[3]"."|"."$newScore[4]"}}, "1");
+				# push (@realTimeScore, $newScore[0]."\t".$newScore[3]."\t\[".$newScore[1]." - ".$newScore[2]."\]\t".$newScore[4]."\t".$newScore[5]);
+			# }								  
 		}
 	}	
 	print "$count\tisUpdate??\t$isUpdate\n";
@@ -243,7 +274,9 @@ sub postFB {
 
 		#3. persis message to file.		
 		$filename = "persis.log"; open INFILE, ">".$filename or die "could not open $filename: $!\n";
-		foreach my $key1 (keys %hCommentData) {
+		
+		# FOREACH LOOP
+		foreach my $key1 (sort keys %hCommentData) {
 			my $stringTemp = @{$hCommentData{"$key1"}}[0];
 			$stringTemp =~ s/\n//g;
 			if ($stringTemp ne ""){
